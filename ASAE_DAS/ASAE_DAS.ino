@@ -14,11 +14,11 @@
 #include <RH_RF95.h> //LoRa Radio library
 #include <Servo.h> //Servo Library
 #include <Wire.h>     //I2C library
-#include <Adafruit_LSM9DS1.h> //Acceleromter library
+#include <Adafruit_LSM9DS1.h> //LSM library
 #include <Adafruit_Sensor.h>  
-#include <Adafruit_GPS.h>
+#include <Adafruit_GPS.h> //GPS Library
 #include <SoftwareSerial.h>
-#include "Adafruit_BMP3XX.h"
+#include "Adafruit_BMP3XX.h" //Altimeter library
 
 //--------LoRa Setup--------------------------------
 #define RFM95_CS 8
