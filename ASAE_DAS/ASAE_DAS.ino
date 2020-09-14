@@ -11,45 +11,76 @@
  */
 //--------LIBRARIES--------------------------
 #include <SPI.h>
-#include <RH_RF95.h> //LoRa Radio library
-#include <Servo.h> //Servo Library
+//#include <RH_RF95.h> //LoRa Radio library
+//#include <Servo.h> //Servo Library
 #include <Wire.h>     //I2C library
-#include <Adafruit_LSM9DS1.h> //LSM library
-#include <Adafruit_Sensor.h>  
-#include <Adafruit_GPS.h> //GPS Library
+//#include <Adafruit_LSM9DS1.h> //LSM library
+//#include <Adafruit_Sensor.h>  
+//#include <Adafruit_GPS.h> //GPS Library
+#include <TinyGPS++.h>
 #include <SoftwareSerial.h>
 #include "Adafruit_BMP3XX.h" //Altimeter library
+#include <LoRa.h>
+#include <SparkFunLSM9DS1.h>
 
 //--------LoRa Setup--------------------------------
+#define ss 8
+#define rst 4
+#define dio0 3
+/*
 #define RFM95_CS 8
 #define RFM95_RST 4
 #define RFM95_INT 7
 #define RF95_FREQ 915.0     //915MHz
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
+*/
 int16_t packetnum = 0;  //packet counter
-char sendDataPacket[200]; //packet that will be sent to ground station
-uint8_t recvDataPacket[RH_RF95_MAX_MESSAGE_LEN];  //packet that will be received from ground station
-uint8_t recvLen = sizeof(buf);
+char outputData[512]; //packet that will be sent to ground station
+//String outputData;
+//uint8_t recvDataPacket[RH_RF95_MAX_MESSAGE_LEN];  //packet that will be received from ground station
+//uint8_t recvLen = sizeof(recvDataPacket);
 
 //--------Altimeter Setup---------------------------
 Adafruit_BMP3XX bmp; // I2C
-float height = 0.0, initHeight = 0.0;
+float height = 0.0, initHeight = 0.0, pressure, temp;
+bool startUp = true;
 #define SEALEVELPRESSURE_HPA (1013.25)
-
+/*
 //--------Accelerometer Setup-----------------------
 Adafruit_LSM9DS1 lsm = Adafruit_LSM9DS1();
-sensors_event_t accel, magneto, gyro, temp;
-
+sensors_event_t accel, magneto, gyro, lsmTemp;
+*/
+float accelx,accely,accelz, magx, magy, magz, gyrox, gyroy, gyroz;
+LSM9DS1 imu;
+//Function definitions
+void printGyro();
+void printAccel();
+void printMag();
+void printAttitude(float ax, float ay, float az, float mx, float my, float mz);
+// Earth's magnetic field varies by location. Add or subtract
+// a declination to get a more accurate heading. Calculate
+// your's here:
+// http://www.ngdc.noaa.gov/geomag-web/#declination
+#define DECLINATION -8.58 // Declination (degrees) in Boulder, CO.
 //--------GPS Setup---------------------------------
+/*
 //GPS TX pin to feather pin 9
 //GPS RX pin to feather pin 10
 SoftwareSerial GPSSerial(9, 10);
-uint32_t timer = millis();
 Adafruit_GPS GPS(&GPSSerial);
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
 #define GPSECHO  true
-float lati,longi; 
+
+uint8_t GPShour, GPSmin, GPSsec;
+float GPSlat,GPSlong, GPSangle, GPSspeed;
+char latDir, longDir;
+*/
+static const int RXPin = 10, TXPin = 9;
+TinyGPSPlus gps;
+SoftwareSerial GPSSerial(RXPin, TXPin);
+uint8_t GPShour, GPSmin, GPSsec;
+float GPSlat,GPSlong, GPScourse, GPSspeed;
 //--------Servos Setup------------------------------
 uint8_t habDropped = 0, watDropped = 0, cdaDropped = 0;
 //--------LEDs Setup--------------------------------
@@ -70,8 +101,47 @@ uint8_t habDropped = 0, watDropped = 0, cdaDropped = 0;
  * Battery:      Current remaining battery power
  */
 bool sendDASData(){
-  snprintf(outputData,200, "{\"alt\":%d.%02d,\"temp\":%d.%02d,\"lat\":%d.%06ld,\"lon\":%d.%06ld}",
-  int(height),int(abs(height)*100)%100,int(temp),int(abs(temp)*100)%100,int(lati),long(abs(lati)*1000000)%1000000,int(longi),long(abs(longi)*1000000)%1000000);
+  //Should be in format:
+  //{"alt":XX.XX,"temp":XX.XX,"lat":XX.XXXXXX,"lon":XX.XXXXXX,"heading":XX.XX,"speed":XX.XX,"accelx":XX.XX,"accely":XX.XX,"accelz":XX.XX,"gyrox":XX.XX,"gyroy":XX.XX,"gyros":XX.XX,"magx":XX.XX,"magy":XX.XX,"magz":XX.XX,"hour":XX,"min":XX,"sec":XX}
+  snprintf(outputData,512, "{\"alt\":%d.%02d,\"temp\":%d.%02d,\"lat\":%d.%06ld,\"lon\":%d.%06ld,\"heading\":%d.%02d,\"speed\":%d.%02d,\"accelx\":%d.%02d,\"accely\":%d.%02d,\"accelz\":%d.%02d,\"gyrox\":%d.%02d,\"gyroy\":%d.%02d,\"gyroz\":%d.%02d,\"magx\":%d.%02d,\"magy\":%d.%02d,\"magz\":%d.%02d,\"hour\":%d,\"min\":%d,\"sec\":%d}",
+  int(height),int(abs(height)*100)%100,int(temp),int(abs(temp)*100)%100,int(GPSlat),long(abs(GPSlat)*1000000)%1000000,int(GPSlong),long(abs(GPSlong)*1000000)%1000000,
+  int(GPScourse),int(abs(GPScourse)*100)%100,int(GPSspeed),int(abs(GPSspeed)*100)%100,int(accelx),int(abs(accelx)*100)%100,int(accely),int(abs(accely)*100)%100,
+  int(accelz),int(abs(accelz)*100)%100,int(magx),int(abs(magx)*100)%100,int(magy),int(abs(magy)*100)%100,
+  int(magz),int(abs(magz)*100)%100,int(gyrox),int(abs(gyrox)*100)%100,int(gyroy),int(abs(gyroy)*100)%100,
+  int(gyroz),int(abs(gyroz)*100)%100,int(GPShour),int(GPSmin),int(GPSsec));
+/*
+  outputData = "{\"alt\":";      outputData += String(height,2);
+  outputData += ",\"temp\":";    outputData += String(temp,2);
+  outputData += ",\"lat\":";     outputData += String(GPSlat,6);
+  outputData += ",\"lon\":";     outputData += String(GPSlong,6);
+  outputData += ",\"heading\":"; outputData += String(GPSangle,2);
+  outputData += ",\"speed\":";   outputData += String(GPSspeed,2);
+  outputData += ",\"accelx\":";  outputData += String(accel.acceleration.x,2);
+  outputData += ",\"accely\":";  outputData += String(accel.acceleration.y,2);
+  outputData += ",\"accelz\":";  outputData += String(accel.acceleration.z,2);
+  outputData += ",\"magx\":";    outputData += String(magneto.magnetic.x,2);
+  outputData += ",\"magy\":";    outputData += String(magneto.magnetic.y,2);
+  outputData += ",\"magz\":";    outputData += String(magneto.magnetic.z,2);
+  outputData += ",\"gyrox\":";   outputData += String(gyro.gyro.x,2);
+  outputData += ",\"gyroy\":";   outputData += String(gyro.gyro.y,2);
+  outputData += ",\"gyroz\":";   outputData += String(gyro.gyro.z,2);
+  outputData += ",\"hour\":";    outputData += String(GPShour);
+  outputData += ",\"min\":";     outputData += String(GPSmin);
+  outputData += ",\"sec\":";     outputData += String(GPSsec);
+  outputData +="}";
+  */
+  Serial.print("Sending Packet:");
+  Serial.println(outputData);
+  //uint8_t outputBuf[sizeof(outputData) + 1];
+  //outputData.toCharArray(outputBuf, sizeof(outputBuf) - 1);
+  if(!LoRa.beginPacket()){
+    return false;
+  }
+  else{
+    LoRa.print(outputData);
+    LoRa.endPacket();
+    return true;
+  }
 }
 
 /*
@@ -106,30 +176,21 @@ void setup() {
   Serial.begin(9600);
   while(!Serial){delay(1);}
   Serial.println("Initializing Data Acquisition System");
-
+  Wire.begin(); //Begin I2C
+  
   //--------LoRa Init--------------------------------------------
   Serial.println("LoRa Initializing");
-  pinMode(RFM95_RST, OUTPUT);
-  digitalWrite(RFM95_RST, HIGH);
-  delay(100);
-  digitalWrite(RFM95_RST, LOW);
-  delay(10);
-  digitalWrite(RFM95_RST, HIGH);
-  delay(10);
-  while (!rf95.init()) {
-    Serial.println("LoRa radio init failed, restart system");
-    while (1);
+  LoRa.setPins(ss, rst, dio0);
+  while (!LoRa.begin(915E6)) {
+    //Serial.println(".");
+    delay(500);
   }
-  if (!rf95.setFrequency(RF95_FREQ)) {
-    Serial.println("setFrequency failed, restart system");
-    while (1);
-  }
-  Serial.print("Set Freq to: "); Serial.println(RF95_FREQ);
-  rf95.setTxPower(23, false);     //you can set transmitter powers from 5 to 23 dBm:
-  Serial.println("LoRa Initialized OK");
+  //LoRa.setSyncWord(0xAA); //Think of sync word as the "channel" for the LoRa module.  Renages from 0x00-0xFF (0-255)
+ Serial.println("LoRa Initialized OK");
 
   //--------Accelerometer Init--------------------------------------------
   Serial.println("LSM Initializing");
+  /*
   if (!lsm.begin()){
     Serial.println("LSM init failed, check wiring and restart system");
     while (1);
@@ -141,15 +202,16 @@ void setup() {
   lsm.setupMag(lsm.LSM9DS1_MAGGAIN_4GAUSS);   //4GAUSS,8GAUSS,12GAUSS, or 16GAUSS
   // 3.) Setup the gyroscope
   lsm.setupGyro(lsm.LSM9DS1_GYROSCALE_245DPS); //245DPS, 500DPS, or 2000DPS
+  */
+  if(!imu.begin()){
+    Serial.println("IMU init failed, check wiring and restart system");
+  }
   Serial.println("LSM Initialized OK");
 
   //--------GPS Init------------------------------------------------------
   Serial.println("GPS Initializing");
-  GPS.begin(9600);
-  //uncomment below line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
-  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
-  GPS.sendCommand(PGCMD_ANTENNA); // Request updates on antenna status, comment out to keep quiet
+  GPSSerial.begin(9600);
+  while(!GPSSerial);
   Serial.println("GPS Initialized OK");
 
   //--------Altimeter Init-------------------------------------------------
@@ -167,14 +229,109 @@ void setup() {
   Serial.println("Data Acquisition System Initialized OK");
 }
 
+uint32_t timer = millis();
+uint32_t sendDataTimer = millis();
 void loop() {
+  //--------Receive any commands from ground station------------------------------
+  /*
   if(rf95.recv(recvDataPacket, &recvLen)){ //Message from ground station
     Serial.println("Received Packet:");
-    serial.println((char*)recvDataPacket);
+    Serial.println((char*)recvDataPacket);
     Serial.print("RSSI: ");Serial.println(rf95.lastRssi(), DEC);    
-    if(drop(recvDataPacket)){uint8_t dropResponse[] = "Good Drop";}
-    else{uint8_t dropResponse[] = "Bad Drop";}
-    rf95.send(dropResponse, sizeof(dropResponse));
+    if(drop(recvDataPacket)){
+      uint8_t dropResponse[] = "Good Drop";
+      rf95.send(dropResponse, sizeof(dropResponse));
+      }
+    else{
+      uint8_t dropResponse[] = "Bad Drop";
+      rf95.send(dropResponse, sizeof(dropResponse));
+    }
+    
     rf95.waitPacketSent();
+  }
+  */
+  //--------Update GPS Data-------------------------------------------------------
+   while(GPSSerial.available() > 0)
+      gps.encode(GPSSerial.read());
+    if(gps.location.isUpdated()){
+      GPSlat = gps.location.lat();
+      GPSlong = gps.location.lng();
+      //Serial.write(GPSSerial.read());
+      //Serial.print("Lat: ");Serial.println(latitude,6);
+      //Serial.print("Lon: ");Serial.println(longitude,6);
+    }
+    if(gps.speed.isValid()){
+      GPSspeed = gps.speed.kmph();
+    }
+    if(gps.course.isValid()){
+      GPScourse = gps.course.deg();
+    }
+    if(gps.time.isValid()){
+      GPShour = gps.time.hour();
+      GPSmin = gps.time.minute();
+      GPSsec = gps.time.second();
+    }
+    
+
+  //--------Update Altimeter Data---------------------------------------------------
+  if(!bmp.performReading()){
+    Serial.println("BMP Failed to Read Data");
+  }
+  else{
+    if(startUp){ //First measurement, set initial height
+      temp = bmp.temperature; //temp in C
+      pressure = bmp.pressure / 100.0; //pressure in hPa
+      initHeight = bmp.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084; //convert meters to feet
+      startUp = false;
+    }
+    temp = bmp.temperature; //temp in C
+    pressure = bmp.pressure / 100.0; //pressure in hPa
+    height = (bmp.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084) - initHeight; 
+  }
+
+  //--------Update LSM Data---------------------------------------------------------
+  /*
+  lsm.read(); //read new data
+  lsm.getEvent(&accel, &magneto, &gyro, &lsmTemp);
+*/
+  if ( imu.gyroAvailable() )
+  {
+    // To read from the gyroscope,  first call the
+    // readGyro() function. When it exits, it'll update the
+    // gx, gy, and gz variables with the most current data.
+    imu.readGyro();
+    gyrox = imu.calcGyro(imu.gx);
+    gyroy = imu.calcGyro(imu.gy);
+    gyroz = imu.calcGyro(imu.gz);
+  }
+  if ( imu.accelAvailable() )
+  {
+    // To read from the accelerometer, first call the
+    // readAccel() function. When it exits, it'll update the
+    // ax, ay, and az variables with the most current data.
+    imu.readAccel();
+    accelx = imu.calcAccel(imu.ax);
+    accely = imu.calcAccel(imu.ay);
+    accelz = imu.calcAccel(imu.az);
+  }
+  if ( imu.magAvailable() )
+  {
+    // To read from the magnetometer, first call the
+    // readMag() function. When it exits, it'll update the
+    // mx, my, and mz variables with the most current data.
+    imu.readMag();
+    magx = imu.calcMag(imu.mx);
+    magy = imu.calcMag(imu.my);
+    magz = imu.calcMag(imu.mz);
+  }
+  
+  //--------Send Data---------------------------------------------------------------
+  if(millis() - sendDataTimer > 500){ //Send data every 500ms (0.5s)
+    if(sendDASData()){
+      Serial.println("Good Send");
+    }
+    else{
+      Serial.println("Bad Send");
+    }
   }
 }
