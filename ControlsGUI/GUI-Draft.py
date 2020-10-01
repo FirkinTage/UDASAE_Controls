@@ -3,6 +3,33 @@ from tkinter import ttk
 from PIL import Image
 from PIL import ImageTk
 
+####################################################### SELCTING A COMPORT ####################################################
+# function to return port # input
+def get_port(entry):
+    print('Port selected: ', entry)
+    global comport_root
+    comport_root.destroy()
+    comport_num = str(entry)
+    return comport_num
+
+# comport GUI     
+comport_root = tk.Tk()            
+comport_root.title('Please enter the comport number')
+comport_root.geometry('300x30')
+
+# entry box
+entry = tk.Entry(comport_root)
+entry.grid()
+
+# enter button
+button = tk.Button(comport_root, \
+    text = 'Enter', 
+    bg = 'white',
+    command = lambda: get_port(entry.get()))  
+button.grid(row=0, column=1)
+
+comport_root.mainloop()
+
 ##################################################### BUILDING THE GUI ########################################################
 # creating the master window (root)
 root = tk.Tk()
