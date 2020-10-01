@@ -45,7 +45,7 @@ void setup() {
   Serial.println("LoRa Initializing");
   pinMode(RFM95_RST, OUTPUT);
   digitalWrite(RFM95_RST, HIGH);
-  delay(10);
+  delay(20);
   digitalWrite(RFM95_RST, LOW);
   delay(10);
   while (!rf95.init()) {
