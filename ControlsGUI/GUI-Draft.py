@@ -3,14 +3,20 @@ from tkinter import ttk
 from PIL import Image
 from PIL import ImageTk
 
-####################################################### SELCTING A COMPORT ####################################################
+######################################################## COM PORT INPUT GUI ####################################################
 # function to return port # input
+def format_port(port_number):
+    com_port_str = 'COM'+str(port_number)
+    return(com_port_str)
+
 def get_port(entry):
     print('Port selected: ', entry)
     global comport_root
     comport_root.destroy()
-    comport_num = str(entry)
-    return comport_num
+    
+    global com_port
+    com_port = format_port(entry)
+    return com_port
 
 # comport GUI     
 comport_root = tk.Tk()            
@@ -27,9 +33,36 @@ button = tk.Button(comport_root, \
     bg = 'white',
     command = lambda: get_port(entry.get()))  
 button.grid(row=0, column=1)
-
 comport_root.mainloop()
-
+print('Global variable test: ',com_port)
+################################################### SELECTING A COM PORT ######################################################
+# import serial.tools.list_ports
+# if __name__ == '__main__':
+#     while(1):
+#         comList = serial.tools.list_ports.comports()        #Get list of available COM ports
+#         connected = []
+#         for element in comList:
+#             connected.append(element.device)
+#         print("COM ports:",connected)
+#         #comPort = input("Type COM port to open: ")          #Get COM port from user
+#         comPort = com_port
+#         print("Opening " + comPort)
+#         try:
+#             serialPort = serial.Serial(port=comPort, baudrate=9600, bytesize=8, timeout=2, stopbits=serial.STOPBITS_ONE)        #Open the chosen COM port
+#         except serial.SerialException:
+#             print("Invalid COM port, try again")    #Catch any invalid COM port picks
+#             pass
+#         else:
+#             print("Good COM port")
+#             while(1):
+#                 if(serialPort.in_waiting>0):
+#                         serialString=serialPort.readline().rstrip().decode("utf-8")     #Read data in serial buffer
+#                         try:
+#                             serialDict=eval(serialString)                               #Try to convert the raw string into a dictionary
+#                         except (NameError,SyntaxError,ValueError) as e:                 #catch any errors when trying to convert to dictionary
+#                             pass
+#                         else:
+#                             print(serialDict)                                           #print out dictionary
 ##################################################### BUILDING THE GUI ########################################################
 # creating the master window (root)
 root = tk.Tk()
@@ -106,48 +139,48 @@ gps_display = tk.Label(dashboard, image = gps_img)
 gps_display.place(x=1000, y=250)
 
 ########################################################## FPV ###############################################################
-# Create the camera object
-# First, create a camera object by importing the USBCamera class from the library by executing the following Python code cell. 
-# Please note, you can only create one USBCamera instance. 
-# Set the capture_device= to the correct number found when you listed the system video devices. 
-# If you have /dev/video0, then set capture_device=0. 
-# If you have /dev/video1, set capture_device=1 in the code line below.
+# # Create the camera object
+# # First, create a camera object by importing the USBCamera class from the library by executing the following Python code cell. 
+# # Please note, you can only create one USBCamera instance. 
+# # Set the capture_device= to the correct number found when you listed the system video devices. 
+# # If you have /dev/video0, then set capture_device=0. 
+# # If you have /dev/video1, set capture_device=1 in the code line below.
 
-from jetcam.usb_camera import USBCamera
-#TODO change capture_device if incorrect for your system
-camera = USBCamera(width=224, height=224, capture_width=640, capture_height=480, capture_device=0)
+# from jetcam.usb_camera import USBCamera
+# #TODO change capture_device if incorrect for your system
+# camera = USBCamera(width=224, height=224, capture_width=640, capture_height=480, capture_device=0)
 
 
-# Create a widget to view the image stream
-# We can create a "widget" to display this image in the notebook. 
-# In order to see the image, convert it from its blue-green-red format (brg8) to a format the browser can display (jpeg).
+# # Create a widget to view the image stream
+# # We can create a "widget" to display this image in the notebook. 
+# # In order to see the image, convert it from its blue-green-red format (brg8) to a format the browser can display (jpeg).
 
-import ipywidgets
-from IPython.display import display
-from jetcam.utils import bgr8_to_jpeg
-​
-image_widget = ipywidgets.Image(format='jpeg')
-​
-image_widget.value = bgr8_to_jpeg(image)
-​
-display(image_widget)
+# import ipywidgets
+# from IPython.display import display
+# from jetcam.utils import bgr8_to_jpeg
+# ​
+# image_widget = ipywidgets.Image(format='jpeg')
+# ​
+# image_widget.value = bgr8_to_jpeg(image)
+# ​
+# display(image_widget)
 
-# You should see an image from the camera if all is working correctly. 
-# If there seems to be an image but it's fuzzy or a funny color, check to make sure there is no protective film or cap on the lens.
-# Now let's watch a live stream from the camera. 
-# Set the running value of the camera to continuously update the value in background. 
-# This allows you to attach "callbacks" to the camera value changes.
+# # You should see an image from the camera if all is working correctly. 
+# # If there seems to be an image but it's fuzzy or a funny color, check to make sure there is no protective film or cap on the lens.
+# # Now let's watch a live stream from the camera. 
+# # Set the running value of the camera to continuously update the value in background. 
+# # This allows you to attach "callbacks" to the camera value changes.
 
-# The "callback" here is the function, update_image, which is attached by calling the observe method below. 
-# update_image is executed whenever there is a new image available to process, which is then displayed in the widget.
+# # The "callback" here is the function, update_image, which is attached by calling the observe method below. 
+# # update_image is executed whenever there is a new image available to process, which is then displayed in the widget.
 
-camera.running = True
-​
-def update_image(change):
-    image = change['new']
-    image_widget.value = bgr8_to_jpeg(image)
+# camera.running = True
+# ​
+# def update_image(change):
+#     image = change['new']
+#     image_widget.value = bgr8_to_jpeg(image)
     
-camera.observe(update_image, names='value')
+# camera.observe(update_image, names='value')
 
 
 ################################################# ATTITUDE INDICATOR #########################################################
