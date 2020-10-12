@@ -17,7 +17,7 @@
 //--------LoRa Setup--------------------------------
 #define RFM95_CS 8
 #define RFM95_RST 4
-#define RFM95_INT 3 //7
+#define RFM95_INT 3 //32u4 = 7 M0 = 3
 #define RF95_FREQ 915.0     //915MHz
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 int16_t packetNum = 0;  //packet counter
@@ -93,13 +93,11 @@ bool sendDASData(){
   Serial.println(outputData);
   //uint8_t outputBuf[sizeof(outputData) + 1];
   //outputData.toCharArray(outputBuf, sizeof(outputBuf) - 1);
-  bool sendPacketConfirm = false;
-  if(!rf95.send((uint8_t*)outputData, sizeof((uint8_t*)outputData))){ //Freezing Here
-    sendPacketConfirm = false;
-  }
-  else{
+  bool sendPacketConfirm = rf95.send((uint8_t*)outputData, sizeof((uint8_t*)outputData));
+  
+  rf95.waitPacketSent();
+  if(sendPacketConfirm){ 
     packetNum++;
-    sendPacketConfirm = true;
   }
   memset(outputData, 0, 512); //clear output data for future transmissions
   return sendPacketConfirm;
