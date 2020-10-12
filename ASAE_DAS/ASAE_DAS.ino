@@ -22,7 +22,7 @@
 //--------LoRa Setup--------------------------------
 #define RFM95_CS 8
 #define RFM95_RST 4
-#define RFM95_INT 3 //7
+#define RFM95_INT 3 //32u4 = 7 M0 = 3
 #define RF95_FREQ 915.0     //915MHz
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 int16_t packetNum = 0;  //packet counter
@@ -33,7 +33,7 @@ uint8_t recvLen = sizeof(recvDataPacket);
 
 //--------Altimeter Setup---------------------------
 Adafruit_BMP3XX bmp; // I2C
-float height = 1.09, initHeight = 0.0, pressure, BMPtemp;
+float height, initHeight, pressure, BMPtemp;
 bool startUp = true;
 #define SEALEVELPRESSURE_HPA (1013.25)
 
@@ -47,15 +47,15 @@ sensors_event_t accl, magneto, gyo, lsmTemp;
 Adafruit_GPS GPS(&Serial1);
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
-#define GPSECHO  true
+#define GPSECHO  false
 
 uint8_t GPShour, GPSmin, GPSsec;
 float GPSlat,GPSlong, GPSangle, GPSspeed;
 char latDir, longDir;
 //--------Servos Setup------------------------------
-#define servo1Pin 11
-#define servo2Pin 12
-#define servoGPin 13
+#define servo1Pin 10
+#define servo2Pin 11
+#define servoGPin 12
 Servo servo1, servo2, servoG;
 uint8_t habDropped = 0, watDropped = 0, cdaDropped = 0;
 //--------LEDs Setup--------------------------------
@@ -84,7 +84,6 @@ uint8_t habDropped = 0, watDropped = 0, cdaDropped = 0;
 bool sendDASData(){
   //Should be in format:
   //{"pkt":XX,"drp":XXX,"alt":XX.XX,"temp":XX.XX,"lat":XX.XXXXXX,"lon":XX.XXXXXX,"hdng":XX.XX,"spd":XX.XX,"aclx":XX.XX,"acly":XX.XX,"aclz":XX.XX,"gyrox":XX.XX,"gyroy":XX.XX,"gyroz":XX.XX,"magx":XX.XX,"magy":XX.XX,"magz":XX.XX,"hour":XX,"min":XX,"sec":XX}
-  
   snprintf(outputData,512, "{\"pkt\":%d,\"drp\":%u%u%u,\"alt\":%d.%02d,\"temp\":%d.%02d,\"lat\":%d.%06ld,\"lon\":%d.%06ld,\"hdng\":%d.%02d,\"spd\":%d.%02d,\"aclx\":%d.%02d,\"acly\":%d.%02d,\"aclz\":%d.%02d,\"gyrox\":%d.%02d,\"gyroy\":%d.%02d,\"gyroz\":%d.%02d,\"magx\":%d.%02d,\"magy\":%d.%02d,\"magz\":%d.%02d,\"hour\":%d,\"min\":%d,\"sec\":%d}",
   int(packetNum),habDropped,watDropped,cdaDropped,int(height),int(fabs(height)*100)%100,int(BMPtemp),int(fabs(BMPtemp)*100)%100,int(GPSlat),long(fabs(GPSlat)*1000000)%1000000,int(GPSlong),long(fabs(GPSlong)*1000000)%1000000,
   int(GPSangle),int(fabs(GPSangle)*100)%100,int(GPSspeed),int(fabs(GPSspeed)*100)%100,int(accl.acceleration.x),int(fabs(accl.acceleration.x)*100)%100,int(accl.acceleration.y),int(fabs(accl.acceleration.y)*100)%100,
@@ -127,14 +126,14 @@ bool sendDASData(){
   Serial.println(outputData);
   //uint8_t outputBuf[sizeof(outputData) + 1];
   //outputData.toCharArray(outputBuf, sizeof(outputBuf) - 1);
-  if(!rf95.send((uint8_t*)outputData, sizeof((uint8_t*)outputData))){
-    return false;
-  }
-  else{
+  bool sendPacketConfirm = rf95.send((uint8_t*)outputData, sizeof((uint8_t*)outputData));
+  
+  rf95.waitPacketSent();
+  if(sendPacketConfirm){ 
     packetNum++;
-    return true;
   }
   memset(outputData, 0, 512); //clear output data for future transmissions
+  return sendPacketConfirm;
 }
 
 /*
@@ -295,7 +294,7 @@ void loop() {
   
   //--------Update GPS Data-------------------------------------------------------
   char GPSRaw = GPS.read(); //Read raw GPS data
-  if((GPSRaw) && (GPSECHO)){  //Used for debugging, comment out for running
+  if(GPSECHO){  //Used for debugging, comment out for running
     Serial.write(GPSRaw);
   }
 
@@ -310,8 +309,8 @@ void loop() {
     GPSmin = GPS.minute;
     GPSsec = GPS.seconds;
     if(GPS.fix){
-      GPSlat = GPS.latitude;
-      GPSlong = GPS.longitude;
+      GPSlat = GPS.latitude_fixed/10000000.0;
+      GPSlong = GPS.longitude_fixed/10000000.0;
       latDir = GPS.lat;
       longDir = GPS.lon;
       GPSspeed = GPS.speed * 1.15078; //To convert knots to mph
@@ -325,12 +324,12 @@ void loop() {
   }
   else{
     if(startUp){ //First measurement, set initial height
-      delay(100);
+      delay(500);
       BMPtemp = bmp.temperature; //temp in C
       pressure = bmp.pressure / 100.0; //pressure in hPa
       initHeight = bmp.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084; //convert meters to feet
       startUp = false;
-      delay(100);
+      delay(500);
     }
     BMPtemp = bmp.temperature; //temp in C
     pressure = bmp.pressure / 100.0; //pressure in hPa
