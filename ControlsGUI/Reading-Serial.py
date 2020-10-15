@@ -68,3 +68,6 @@ stop.grid(row = 0, column = 1)
 
 root.after(1, get_data)
 root.mainloop()
+
+s = sr.Serial('/dev/cu.URT0', 115200) # change COM Port name
+s.reset_input_buffer()
