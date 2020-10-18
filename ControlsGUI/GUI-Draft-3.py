@@ -21,6 +21,8 @@ cond = False
 df = pd.DataFrame()
 def get_data():
     global cond, s, df #, a, df
+    cda_check_drop = 0
+    wh_check_drop = 0
     if (cond == True):
         serialString=s.readline().rstrip().decode("utf-8")     #Read data in serial buffer
         try:
@@ -29,13 +31,39 @@ def get_data():
         except (NameError,SyntaxError,ValueError) as e:                 #catch any errors when trying to convert to dictionary
             pass
         else:
-            #serialDict['alt'] = int(serialDict['alt'] + 10)
+            df = df.append(serialDict, ignore_index = True)
+            
             altitude = serialDict['alt']
             str_alt = tk.StringVar()
             str_alt.set(altitude)
             alt_num = tk.Label(alt_frame, textvariable=str_alt, font=("Fixedsys", 48), bd=5, relief="sunken")
             alt_num.grid(row = 1, column = 0, sticky="ns")
-            df = df.append(a, ignore_index = True)
+
+            speed = serialDict['spd']
+            str_spd = tk.StringVar()
+            str_spd.set(speed)
+            speed_num = tk.Label(alt_frame, textvariable=str_cda_alt, font=("Fixedsys", 48), bd=5, relief="sunken")
+            speed_num.grid(row=1, column = 6, sticky="ns")
+
+            if int(serialDict['habDrp']) != 0 and wh_check_drop == 0:
+                wh_alt = serialDict['habDrp']
+                wh_cda_alt = tk.StringVar()
+                wh_cda_alt.set(cda_alt)
+
+                wh_num = tk.Label(alt_frame, textvariable=str_wh_alt, font=("Fixedsys", 48), bd=5, relief="sunken")
+                wh_num.grid(row=1, column = 4, sticky="ns")
+                wh_check_drop = 1
+            
+            if int(serialDict['cdaDrp']) != 0 and cda_check_drop == 0:
+                cda_alt = serialDict['cdaDrp']
+                str_cda_alt = tk.StringVar()
+                str_cda_alt.set(cda_alt)
+
+                cda_num = tk.Label(alt_frame, textvariable=str_cda_alt, font=("Fixedsys", 48), bd=5, relief="sunken")
+                cda_num.grid(row=1, column = 2, sticky="ns")
+                cda_check_drop = 1
+                
+
     root.after(2000, get_data)
 
 
@@ -136,37 +164,37 @@ alt_label.grid(sticky="nesw")
 # alt_num.grid(row = 1, sticky="ns")
 
 # CDA altitude
-cda_alt = 0.00
-str_cda_alt = tk.StringVar()
-str_cda_alt.set(cda_alt)
+# cda_alt = 0.00
+# str_cda_alt = tk.StringVar()
+# str_cda_alt.set(cda_alt)
 
 cda_label = tk.Label(alt_frame, text="Colonist drop (ft):", font=("Fixedsys", 24), fg = 'black')
 cda_label.grid(row = 0, column = 2, sticky="nesw", padx = 15)
 
-cda_num = tk.Label(alt_frame, textvariable=str_cda_alt, font=("Fixedsys", 48), bd=5, relief="sunken")
-cda_num.grid(row=1, column = 2, sticky="ns")
+# cda_num = tk.Label(alt_frame, textvariable=str_cda_alt, font=("Fixedsys", 48), bd=5, relief="sunken")
+# cda_num.grid(row=1, column = 2, sticky="ns")
 
 # Water/habitat altitude
-wh_alt = 0.00
-str_wh_alt = tk.StringVar()
-str_wh_alt.set(wh_alt)
+# wh_alt = 0.00
+# str_wh_alt = tk.StringVar()
+# str_wh_alt.set(wh_alt)
 
 wh_label = tk.Label(alt_frame, text="Water/habitat drop (ft):", font=("Fixedsys", 24), fg = 'black')
 wh_label.grid(row=0, column = 4, sticky="nesw", padx = 12)
 
-wh_num = tk.Label(alt_frame, textvariable=str_cda_alt, font=("Fixedsys", 48), bd=5, relief="sunken")
-wh_num.grid(row=1, column = 4, sticky="ns")
+# wh_num = tk.Label(alt_frame, textvariable=str_cda_alt, font=("Fixedsys", 48), bd=5, relief="sunken")
+# wh_num.grid(row=1, column = 4, sticky="ns")
 
 # Speed
-speed = 0.00
-str_speed = tk.StringVar()
-str_speed.set(speed)
+# speed = 0.00
+# str_speed = tk.StringVar()
+# str_speed.set(speed)
 
 speed_label = tk.Label(alt_frame, text="Speed (mph):", font=("Fixedsys", 24), fg = 'black')
 speed_label.grid(row=0, column = 6, sticky="nesw", padx = 15)
 
-speed_num = tk.Label(alt_frame, textvariable=str_cda_alt, font=("Fixedsys", 48), bd=5, relief="sunken")
-speed_num.grid(row=1, column = 6, sticky="ns")
+# speed_num = tk.Label(alt_frame, textvariable=str_cda_alt, font=("Fixedsys", 48), bd=5, relief="sunken")
+# speed_num.grid(row=1, column = 6, sticky="ns")
 
 # # GPS
 # img = Image.open("formatted_airfield_test.jpeg")
@@ -207,7 +235,7 @@ show_data_button = tk.Button(all_data, \
                   text='Click for data', command=lambda: data_stop())
 show_data_button.place(anchor = 'nw')
 
-s = sr.Serial('COM21', 9600)  # change COM Port name
-s.reset_input_buffer()
+# s = sr.Serial('COM21', 9600)  # change COM Port name
+# s.reset_input_buffer()
 root.after(5, get_data)
 root.mainloop()
