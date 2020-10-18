@@ -22,7 +22,7 @@
 //--------LoRa Setup--------------------------------
 #define RFM95_CS 8
 #define RFM95_RST 4
-#define RFM95_INT 3 //32u4 = 7 M0 = 3
+#define RFM95_INT 3
 #define RF95_FREQ 915.0     //915MHz
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 int16_t packetNum = 0;  //packet counter
@@ -33,7 +33,8 @@ uint8_t recvLen = sizeof(recvDataPacket);
 
 //--------Altimeter Setup---------------------------
 Adafruit_BMP3XX bmp; // I2C
-float height, initHeight, pressure, BMPtemp;
+float height = 0.0, initHeight = 0.0, habHeight = 0.0, cdaHeight = 0.0, watHeight = 0.0, pressure, BMPtemp;
+
 bool startUp = true;
 #define SEALEVELPRESSURE_HPA (1013.25)
 
@@ -47,9 +48,8 @@ sensors_event_t accl, magneto, gyo, lsmTemp;
 Adafruit_GPS GPS(&Serial1);
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
-#define GPSECHO  false
+#define GPSECHO  true
 
-uint8_t GPShour, GPSmin, GPSsec;
 float GPSlat,GPSlong, GPSangle, GPSspeed;
 char latDir, longDir;
 //--------Servos Setup------------------------------
@@ -83,23 +83,13 @@ uint8_t habDropped = 0, watDropped = 0, cdaDropped = 0;
  */
 bool sendDASData(){
   //Should be in format:
-  //{"pkt":XX,"drp":XXX,"alt":XX.XX,"temp":XX.XX,"lat":XX.XXXXXX,"lon":XX.XXXXXX,"hdng":XX.XX,"spd":XX.XX,"aclx":XX.XX,"acly":XX.XX,"aclz":XX.XX,"gyrox":XX.XX,"gyroy":XX.XX,"gyroz":XX.XX,"magx":XX.XX,"magy":XX.XX,"magz":XX.XX,"hour":XX,"min":XX,"sec":XX}
-  snprintf(outputData,512, "{\"pkt\":%d,\"drp\":%u%u%u,\"alt\":%d.%02d,\"temp\":%d.%02d,\"lat\":%d.%06ld,\"lon\":%d.%06ld,\"hdng\":%d.%02d,\"spd\":%d.%02d,\"aclx\":%d.%02d,\"acly\":%d.%02d,\"aclz\":%d.%02d,\"gyrox\":%d.%02d,\"gyroy\":%d.%02d,\"gyroz\":%d.%02d,\"magx\":%d.%02d,\"magy\":%d.%02d,\"magz\":%d.%02d,\"hour\":%d,\"min\":%d,\"sec\":%d}",
-  int(packetNum),habDropped,watDropped,cdaDropped,int(height),int(fabs(height)*100)%100,int(BMPtemp),int(fabs(BMPtemp)*100)%100,int(GPSlat),long(fabs(GPSlat)*1000000)%1000000,int(GPSlong),long(fabs(GPSlong)*1000000)%1000000,
-  int(GPSangle),int(fabs(GPSangle)*100)%100,int(GPSspeed),int(fabs(GPSspeed)*100)%100,int(accl.acceleration.x),int(fabs(accl.acceleration.x)*100)%100,int(accl.acceleration.y),int(fabs(accl.acceleration.y)*100)%100,
-  int(accl.acceleration.z),int(fabs(accl.acceleration.z)*100)%100,int(magneto.magnetic.x),int(fabs(magneto.magnetic.x)*100)%100,int(magneto.magnetic.y),int(fabs(magneto.magnetic.y)*100)%100,
-  int(magneto.magnetic.z),int(fabs(magneto.magnetic.z)*100)%100,int(gyo.gyro.x),int(fabs(gyo.gyro.x)*100)%100,int(gyo.gyro.y),int(fabs(gyo.gyro.y)*100)%100,
-  int(gyo.gyro.z),int(fabs(gyo.gyro.z)*100)%100,int(GPShour),int(GPSmin),int(GPSsec));
-  
-/*
-   //{"pkt":XX,"drp":XXX,"alt":XX.XX,"temp":XX.XX,"lat":XX.XXXXXX,"lon":XX.XXXXXX,"hdng":XX.XX,"spd":XX.XX,"aclx":XX.XX,"acly":XX.XX,"aclz":XX.XX,"gyrox":XX.XX,"gyroy":XX.XX,"gyroz":XX.XX,"magx":XX.XX,"magy":XX.XX,"magz":XX.XX,"hour":XX,"min":XX,"sec":XX}
-  snprintf(outputData,512, "{\"pkt\":%d,\"drp\":%u%u%u,\"alt\":%d.%d,\"temp\":%d.%02d,\"lat\":%d.%06ld,\"lon\":%d.%06ld,\"hdng\":%d.%02d,\"spd\":%d.%02d,\"aclx\":%d.%02d,\"acly\":%d.%02d,\"aclz\":%d.%02d,\"gyrox\":%d.%02d,\"gyroy\":%d.%02d,\"gyroz\":%d.%02d,\"magx\":%d.%02d,\"magy\":%d.%02d,\"magz\":%d.%02d,\"hour\":%d,\"min\":%d,\"sec\":%d}",
-  int(packetNum),habDropped,watDropped,cdaDropped,int(height),int(fabs(height)*100)%100,int(BMPtemp),int(fabs(BMPtemp)*100)%100,int(GPSlat),long(fabs(GPSlat)*1000000)%1000000,int(GPSlong),long(fabs(GPSlong)*1000000)%1000000,
-  int(GPSangle),int(fabs(GPSangle)*100)%100,int(GPSspeed),int(fabs(GPSspeed)*100)%100,int(3.4),int(fabs(3.4)*100)%100,int(0.5),int(fabs(0.5)*100)%100,
-  int(1.2),int(fabs(1.2)*100)%100,int(10.23),int(fabs(10.23)*100)%100,int(90.5),int(fabs(90.5)*100)%100,
-  int(30.3),int(fabs(30.3)*100)%100,int(20.3),int(fabs(20.3)*100)%100,int(34.65),int(fabs(34.65)*100)%100,
-  int(-45.45),int(fabs(-45.45)*100)%100,int(GPShour),int(GPSmin),int(GPSsec));
-*/ 
+  //{"pkt":XX,"drp":XXX,"alt":XX.XX,"temp":XX.XX,"lat":XX.XXXXXX,"lon":XX.XXXXXX,"hdng":XX.XX,"spd":XX.XX,"aclx":XX.XX,"acly":XX.XX,"aclz":XX.XX,"gyrox":XX.XX,"gyroy":XX.XX,"gyroz":XX.XX,"magx":XX.XX,"magy":XX.XX,"magz":XX.XX,"habDrp":XX.XX,"cdaDrp":XX.XX,"watDrp":XX.XX}
+  snprintf(outputData,512, "{\"pkt\":%d,\"drp\":%u%u%u,\"alt\":%d.%02d,\"temp\":%d.%02d,\"lat\":%d.%06ld,\"lon\":%d.%06ld,\"hdng\":%d.%02d,\"spd\":%d.%02d,\"aclx\":%d.%02d,\"acly\":%d.%02d,\"aclz\":%d.%02d,\"gyrox\":%d.%02d,\"gyroy\":%d.%02d,\"gyroz\":%d.%02d,\"magx\":%d.%02d,\"magy\":%d.%02d,\"magz\":%d.%02d,\"habDrp\":%d.%02d,\"cdaDrp\":%d.%02d,\"watDrp\":%d.%02d}",
+  int(packetNum),habDropped,watDropped,cdaDropped,int(height),int(abs(height)*100)%100,int(BMPtemp),int(abs(BMPtemp)*100)%100,int(GPSlat),long(abs(GPSlat)*1000000)%1000000,int(GPSlong),long(abs(GPSlong)*1000000)%1000000,
+  int(GPSangle),int(abs(GPSangle)*100)%100,int(GPSspeed),int(abs(GPSspeed)*100)%100,int(accl.acceleration.x),int(abs(accl.acceleration.x)*100)%100,int(accl.acceleration.y),int(abs(accl.acceleration.y)*100)%100,
+  int(accl.acceleration.z),int(abs(accl.acceleration.z)*100)%100,int(magneto.magnetic.x),int(abs(magneto.magnetic.x)*100)%100,int(magneto.magnetic.y),int(abs(magneto.magnetic.y)*100)%100,
+  int(magneto.magnetic.z),int(abs(magneto.magnetic.z)*100)%100,int(gyo.gyro.x),int(abs(gyo.gyro.x)*100)%100,int(gyo.gyro.y),int(abs(gyo.gyro.y)*100)%100,
+  int(gyo.gyro.z),int(abs(gyo.gyro.z)*100)%100,int(habHeight),int(abs(habHeight)*100)%100,int(cdaHeight),int(abs(cdaHeight)*100)%100,int(watHeight),int(abs(watHeight)*100)%100);
 /*
   outputData = "{\"pkt\":";    outputData += String(packetNum);
   outputData += ",\"alt\":";   outputData += String(height,2);
@@ -126,14 +116,14 @@ bool sendDASData(){
   Serial.println(outputData);
   //uint8_t outputBuf[sizeof(outputData) + 1];
   //outputData.toCharArray(outputBuf, sizeof(outputBuf) - 1);
-  bool sendPacketConfirm = rf95.send((uint8_t*)outputData, sizeof((uint8_t*)outputData));
-  
-  rf95.waitPacketSent();
-  if(sendPacketConfirm){ 
+  if(!rf95.send((uint8_t*)outputData, sizeof((uint8_t*)outputData))){
+    return false;
+  }
+  else{
     packetNum++;
+    return true;
   }
   memset(outputData, 0, 512); //clear output data for future transmissions
-  return sendPacketConfirm;
 }
 
 /*
@@ -146,10 +136,15 @@ bool sendDASData(){
 bool drop(uint8_t* payload){
   if(payload == (uint8_t*)"PAY"){      //Drop the hab
     Serial.println("Drop Habitats/Water Bottles");
-    habDropped = 1;
-    watDropped = 1;
     servo1.write(180);  //Turn servo to 180 degrees
     servo2.write(180);  //Turn servo to 180 degrees
+    habDropped = 1;
+    watDropped = 1;
+    bmp.performReading();
+    BMPtemp = bmp.temperature; //temp in C
+    pressure = bmp.pressure / 100.0; //pressure in hPa
+    habHeight = (bmp.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084) - initHeight; 
+    watHeight = habHeight;
     if(sendDASData()){
       Serial.println("Good Send");
     }
@@ -171,8 +166,12 @@ bool drop(uint8_t* payload){
   */
   else if(payload == (uint8_t*)"CDA"){ //Drop the cda
     Serial.println("Drop CDA");
-    cdaDropped = 1;
     servoG.write(180);  //Turn servo to 180 degrees
+    cdaDropped = 1;
+    bmp.performReading();
+    BMPtemp = bmp.temperature; //temp in C
+    pressure = bmp.pressure / 100.0; //pressure in hPa
+    cdaHeight = (bmp.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084) - initHeight; 
     if(sendDASData()){
       Serial.println("Good Send");
     }
@@ -210,10 +209,8 @@ void setup() {
   Serial.println("LoRa Initializing");
   pinMode(RFM95_RST, OUTPUT);
   digitalWrite(RFM95_RST, HIGH);
-  delay(100);
-  digitalWrite(RFM95_RST, LOW);
   delay(10);
-  digitalWrite(RFM95_RST, HIGH);
+  digitalWrite(RFM95_RST, LOW);
   delay(10);
   while (!rf95.init()) {
     digitalWrite(redLED, HIGH);
@@ -283,18 +280,14 @@ uint32_t sendDataTimer = millis();
 void loop() {
   //--------Receive any commands from ground station------------------------------
   if(rf95.recv(recvDataPacket, &recvLen)){ //Message from ground station
-    if(strlen((char*)recvDataPacket) > 0){
-      Serial.println(strlen((char*)recvDataPacket));
-      Serial.println("Received Packet:");
-      Serial.println((char*)recvDataPacket);
-      Serial.print("RSSI: ");Serial.println(rf95.lastRssi(), DEC);    
-      drop(recvDataPacket);
-    }
+    Serial.println("Received Packet:");
+    Serial.println((char*)recvDataPacket);
+    Serial.print("RSSI: ");Serial.println(rf95.lastRssi(), DEC);    
+    drop(recvDataPacket);
   }
-  
   //--------Update GPS Data-------------------------------------------------------
   char GPSRaw = GPS.read(); //Read raw GPS data
-  if(GPSECHO){  //Used for debugging, comment out for running
+  if((GPSRaw) && (GPSECHO)){  //Used for debugging, comment out for running
     Serial.write(GPSRaw);
   }
 
@@ -305,12 +298,9 @@ void loop() {
   }
   if(millis() - GPStimer > 1000){  //Update GPS data every second    
     GPStimer = millis(); //reset timer
-    GPShour = GPS.hour;
-    GPSmin = GPS.minute;
-    GPSsec = GPS.seconds;
     if(GPS.fix){
-      GPSlat = GPS.latitude_fixed/10000000.0;
-      GPSlong = GPS.longitude_fixed/10000000.0;
+      GPSlat = GPS.latitude;
+      GPSlong = GPS.longitude;
       latDir = GPS.lat;
       longDir = GPS.lon;
       GPSspeed = GPS.speed * 1.15078; //To convert knots to mph
@@ -324,12 +314,10 @@ void loop() {
   }
   else{
     if(startUp){ //First measurement, set initial height
-      delay(500);
       BMPtemp = bmp.temperature; //temp in C
       pressure = bmp.pressure / 100.0; //pressure in hPa
       initHeight = bmp.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084; //convert meters to feet
       startUp = false;
-      delay(500);
     }
     BMPtemp = bmp.temperature; //temp in C
     pressure = bmp.pressure / 100.0; //pressure in hPa
@@ -341,8 +329,7 @@ void loop() {
   lsm.getEvent(&accl, &magneto, &gyo, &lsmTemp);
 
   //--------Send Data---------------------------------------------------------------
-  if(millis() - sendDataTimer > 500){ //Send data every 100ms (0.1s)
-    sendDataTimer = millis();
+  if(millis() - sendDataTimer > 100){ //Send data every 100ms (0.1s)
     if(sendDASData()){
       Serial.println("Good Send");
     }
