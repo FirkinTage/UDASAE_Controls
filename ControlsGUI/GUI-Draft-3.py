@@ -207,7 +207,7 @@ show_data_button = tk.Button(all_data, \
                   text='Click for data', command=lambda: data_stop())
 show_data_button.place(anchor = 'nw')
 
-# s = sr.Serial('COM21', 9600)  # change COM Port name
-# s.reset_input_buffer()
+s = sr.Serial('COM21', 9600)  # change COM Port name
+s.reset_input_buffer()
 root.after(5, get_data)
 root.mainloop()
