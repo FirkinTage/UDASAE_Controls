@@ -13,8 +13,8 @@
 #include <RH_RF95.h>
 
  //--------LoRa Setup--------------------------------
-#define RFM95_CS 8
-#define RFM95_RST 4
+#define RFM95_CS 4
+#define RFM95_RST 2
 #define RFM95_INT 3
 #define RF95_FREQ 915.0     //915MHz
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
@@ -23,15 +23,13 @@ uint8_t recvDataPacket[RH_RF95_MAX_MESSAGE_LEN];  //packet that will be received
 uint8_t recvLen = sizeof(recvDataPacket);
 
 //---------Button Setup------------------------------
-#define habBtn 1
-#define watBtn 2
-#define cdaBtn 3
-#define habDropLED 11
-#define watDropLED 12
-#define cdaDropLED 13
-int habDropState = 0,watDropState = 0,cdaDropState = 0;             //Current state of the drop buttons
-int habLEDState = LOW,watLEDState = LOW,cdaLEDState = LOW;          //Current state of the drop LEDs
-int habDropConfirmed = 0,watDropConfirmed = 0,cdaDropConfirmed = 0; //Drops confirmed by DAS
+#define payBtn 5
+#define cdaBtn 6
+#define payDropLED 9
+#define cdaDropLED 10
+int payDropState = 0,cdaDropState = 0;             //Current state of the drop buttons
+int payLEDState = LOW,cdaLEDState = LOW;           //Current state of the drop LEDs
+int payDropConfirmed = 0,cdaDropConfirmed = 0; //Drops confirmed by DAS
 unsigned long lastMillis = 0;
 const long blinkInterval = 500;
 
@@ -39,14 +37,16 @@ void setup() {
   Serial.begin(9600);
   while (!Serial);
   Wire.begin();
-  Serial.println("Grandstation Initializing");
+  Serial.println("Groundstation Initializing");
   
   //---------------LoRa Init------------------------------------------------------
   Serial.println("LoRa Initializing");
   pinMode(RFM95_RST, OUTPUT);
   digitalWrite(RFM95_RST, HIGH);
-  delay(20);
+  delay(10);
   digitalWrite(RFM95_RST, LOW);
+  delay(10);
+  digitalWrite(RFM95_RST, HIGH);
   delay(10);
   while (!rf95.init()) {
     Serial.println("LoRa radio init failed, restart system");
@@ -61,14 +61,12 @@ void setup() {
   Serial.println("LoRa Initialized OK");
 
   //--------------Button Init------------------------------------------------------
-  pinMode(habBtn, INPUT);
-  pinMode(watBtn, INPUT);
+  pinMode(payBtn, INPUT);
   pinMode(cdaBtn, INPUT);
-  pinMode(habDropLED, OUTPUT);
-  pinMode(watDropLED, OUTPUT);
+  pinMode(payDropLED, OUTPUT);
   pinMode(cdaDropLED, OUTPUT);
   
-  Serial.println("Grandstation Initialized OK");
+  Serial.println("Groundstation Initialized OK");
   
 
 }
@@ -87,10 +85,10 @@ void loop() {
       Serial.println(error.c_str());
     }
     if(inData["drp"][0] == "1"){
-      habDropConfirmed = 1;
+      payDropConfirmed = 1;
     }
     if(inData["drp"][1] == "1"){
-      watDropConfirmed = 1;
+      payDropConfirmed = 1;
     }
     if(inData["drp"][2] == "1"){
       cdaDropConfirmed = 1;
@@ -121,22 +119,15 @@ void loop() {
   }
 
   //--------Buttons For Dropping Payloads----------------------------------------
-  habDropState = digitalRead(habBtn);
-  watDropState = digitalRead(watBtn);
-  cdaDropState = digitalRead(cdaBtn);
-  if(habDropState == HIGH){
-    uint8_t sendDrop[] = "HAB";
+  int payBtnState = digitalRead(payBtn);
+  int cdaBtnState = digitalRead(cdaBtn);
+  if(payBtnState == HIGH){
+    uint8_t sendDrop[] = "PAY";
     rf95.send(sendDrop, sizeof(sendDrop));
     rf95.waitPacketSent();
-    habDropState = 1;
+    payDropState = 1;
   }
-  if(watDropState == HIGH){
-    uint8_t sendDrop[] = "WAT";
-    rf95.send(sendDrop, sizeof(sendDrop));
-    rf95.waitPacketSent();
-    watDropState = 1;
-  }
-  if(cdaDropState == HIGH){
+  if(cdaBtnState == HIGH){
     uint8_t sendDrop[] = "CDA";
     rf95.send(sendDrop, sizeof(sendDrop));
     rf95.waitPacketSent();
@@ -147,27 +138,17 @@ void loop() {
   unsigned long currentMillis = millis();
   //If button never pressed, turn off. If drop button pressed blink every 500 ms. If drop confirmed, stay lit.
   if(currentMillis - lastMillis >= blinkInterval){
-    //Hab Drop LED Setting
-    if(habDropConfirmed == 1){habLEDState = HIGH;
+    lastMillis = millis();
+    //Payload Drop LED Setting
+    if(payDropConfirmed == 1){payLEDState = HIGH;
     }
-    else if(habDropState == 1){
-      if(habLEDState == HIGH){habLEDState = LOW;
+    else if(payDropState == 1){
+      if(payLEDState == HIGH){payLEDState = LOW;
       }
-      else{habLEDState = HIGH;
-      }
-    }
-    else{habLEDState = LOW;
-    }
-    //Water Drop LED Setting
-    if(watDropConfirmed == 1){watLEDState = HIGH;
-    }
-    else if(watDropState == 1){
-      if(watLEDState == HIGH){watLEDState = LOW;
-      }
-      else{watLEDState = HIGH;
+      else{payLEDState = HIGH;
       }
     }
-    else{watLEDState = LOW;
+    else{payLEDState = LOW;
     }
     //CDA Drop LED Setting
     if(cdaDropConfirmed == 1){cdaLEDState = HIGH;
@@ -180,8 +161,7 @@ void loop() {
     }
     else{cdaLEDState = LOW;
     }
-    digitalWrite(habDropLED, habLEDState);
-    digitalWrite(watDropLED, watLEDState);
+    digitalWrite(payDropLED, payLEDState);
     digitalWrite(cdaDropLED, cdaLEDState);
   }
 }
