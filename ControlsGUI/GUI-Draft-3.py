@@ -47,8 +47,8 @@ def get_data():
             speed_num = tk.Label(alt_frame, textvariable=str_spd, font=("Fixedsys", 48), bd=5, relief="sunken")
             speed_num.grid(row=1, column=6, sticky="ns")
 
-            if int(serialDict['habDrp']) != 0 and wh_check_drop == 0:
-                wh_alt = serialDict['habDrp']
+            if float(serialDict['habHeight']) != 0 and wh_check_drop == 0:
+                wh_alt = serialDict['habHeight']
                 wh_cda_alt = tk.StringVar()
                 wh_cda_alt.set(wh_alt)
 
@@ -56,8 +56,8 @@ def get_data():
                 wh_num.grid(row=1, column=4, sticky="ns")
                 wh_check_drop = 1
 
-            if int(serialDict['cdaDrp']) != 0 and cda_check_drop == 0:
-                cda_alt = serialDict['cdaDrp']
+            if float(serialDict['cdaHeight']) != 0 and cda_check_drop == 0:
+                cda_alt = serialDict['cdaHeight']
                 str_cda_alt = tk.StringVar()
                 str_cda_alt.set(cda_alt)
 
@@ -237,7 +237,7 @@ show_data_button = tk.Button(all_data, \
                              text='Click for data', command=lambda: data_stop())
 show_data_button.place(anchor='nw')
 
-s = sr.Serial('COM9', 9600)  # change COM Port name
+s = sr.Serial('COM4', 9600)  # change COM Port name
 s.reset_input_buffer()
 root.after(5, get_data)
 root.mainloop()
