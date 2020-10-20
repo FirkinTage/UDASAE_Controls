@@ -36,10 +36,7 @@ def get_data():
             df = df.append(serialDict, ignore_index=True)
 
             altitude = format(serialDict['alt'],".2f")
-            str_alt = tk.StringVar()
             str_alt.set(altitude)
-            alt_num = tk.Label(alt_frame, textvariable=str_alt, font=("Fixedsys", 48), bd=5, relief="sunken")
-            alt_num.grid(row=1, column=0, sticky="ns")
 
             speed = serialDict['spd']
             str_spd = tk.StringVar()
@@ -65,6 +62,7 @@ def get_data():
                 cda_num.grid(row=1, column=2, sticky="ns")
                 cda_check_drop = 1
 
+            root.update_idletasks()
     root.after(100, get_data)
 
 
@@ -162,6 +160,10 @@ alt_frame.place(relheigh=0.165, relwidth=0.70)
 alt_label = tk.Label(alt_frame, text="Current Altitude (ft):", font=("Fixedsys", 24), fg='black')
 alt_label.grid(sticky="nesw")
 
+str_alt = tk.StringVar()
+str_alt.set("")
+alt_num = tk.Label(alt_frame, textvariable=str_alt, font=("Fixedsys", 48), bd=5, relief="sunken")
+alt_num.grid(row=1, column=0, sticky="ns")
 # alt_num = tk.Label(alt_frame, textvariable=str_alt, font=("Fixedsys", 48), bd=5, relief="sunken")
 # alt_num.grid(row = 1, sticky="ns")
 
