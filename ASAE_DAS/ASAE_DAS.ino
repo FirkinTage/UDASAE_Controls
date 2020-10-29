@@ -82,27 +82,27 @@ uint8_t habDropped = 0, watDropped = 0, cdaDropped = 0;
  */
 bool sendDASData(){
   digitalWrite(bluLED, HIGH);
-  outputData = "{\"pk\":";  outputData += String(packetNum);
-  outputData += ",\"dp\":"; outputData += String(habDropped); outputData += String(cdaDropped); outputData += String(watDropped);
-  outputData += ",\"al\":"; outputData += String(height,2);
-  outputData += ",\"lt\":"; outputData += String(GPSlat,6);
-  outputData += ",\"ln\":"; outputData += String(GPSlong,6);
-  outputData += ",\"hd\":"; outputData += String(GPSangle,2);
-  outputData += ",\"sp\":"; outputData += String(GPSspeed,2);
-  outputData += ",\"ax\":"; outputData += String(accl.acceleration.x,2);
-  outputData += ",\"ay\":"; outputData += String(accl.acceleration.y,2);
-  outputData += ",\"az\":"; outputData += String(accl.acceleration.z,2);
+  outputData = "{\"p\":";  outputData += String(packetNum);
+  outputData += ",\"d\":"; outputData += String(habDropped); outputData += String(cdaDropped); outputData += String(watDropped);
+  outputData += ",\"a\":"; outputData += String(height,2);
+  outputData += ",\"t\":"; outputData += String(GPSlat,6);
+  outputData += ",\"n\":"; outputData += String(GPSlong,6);
+  outputData += ",\"h\":"; outputData += String(GPSangle,2);
+  outputData += ",\"s\":"; outputData += String(GPSspeed,2);
+  outputData += ",\"x\":"; outputData += String(accl.acceleration.x,2);
+  outputData += ",\"y\":"; outputData += String(accl.acceleration.y,2);
+  outputData += ",\"z\":"; outputData += String(accl.acceleration.z,2);
   /*
   outputData += ",\"mx\":"; outputData += String(magneto.magnetic.x,2);
   outputData += ",\"my\":"; outputData += String(magneto.magnetic.y,2);
   outputData += ",\"mz\":"; outputData += String(magneto.magnetic.z,2);
   */
-  outputData += ",\"gx\":"; outputData += String(gyo.gyro.x,2);
-  outputData += ",\"gy\":"; outputData += String(gyo.gyro.y,2);
-  outputData += ",\"gz\":"; outputData += String(gyo.gyro.z,2);
-  outputData += ",\"hH\":"; outputData += String(habHeight,2);
-  outputData += ",\"cH\":"; outputData += String(cdaHeight,2);
-  outputData += ",\"wH\":"; outputData += String(watHeight,2);
+  outputData += ",\"i\":"; outputData += String(gyo.gyro.x,2);
+  outputData += ",\"j\":"; outputData += String(gyo.gyro.y,2);
+  outputData += ",\"k\":"; outputData += String(gyo.gyro.z,2);
+  outputData += ",\"b\":"; outputData += String(habHeight,2);
+  outputData += ",\"c\":"; outputData += String(cdaHeight,2);
+  outputData += ",\"w\":"; outputData += String(watHeight,2);
   outputData +="}";
 
   uint8_t dataOut[outputData.length()];
