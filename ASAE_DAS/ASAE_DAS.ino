@@ -28,6 +28,7 @@ RH_RF95 rf95(RFM95_CS, RFM95_INT);
 int16_t packetNum = 0;  //packet counter
 uint8_t recvDataPacket[RH_RF95_MAX_MESSAGE_LEN];  //packet that will be received from ground station
 uint8_t recvLen = sizeof(recvDataPacket);
+  String outputData;
 
 //--------Altimeter Setup---------------------------
 Adafruit_BMP3XX bmp; // I2C
@@ -80,7 +81,7 @@ uint8_t habDropped = 0, watDropped = 0, cdaDropped = 0;
  * Second:       Second when last GPS position taken
  */
 bool sendDASData(){
-  String outputData;
+  digitalWrite(bluLED, HIGH);
   outputData = "{\"pk\":";  outputData += String(packetNum);
   outputData += ",\"dp\":"; outputData += String(habDropped); outputData += String(cdaDropped); outputData += String(watDropped);
   outputData += ",\"al\":"; outputData += String(height,2);
@@ -91,9 +92,11 @@ bool sendDASData(){
   outputData += ",\"ax\":"; outputData += String(accl.acceleration.x,2);
   outputData += ",\"ay\":"; outputData += String(accl.acceleration.y,2);
   outputData += ",\"az\":"; outputData += String(accl.acceleration.z,2);
+  /*
   outputData += ",\"mx\":"; outputData += String(magneto.magnetic.x,2);
   outputData += ",\"my\":"; outputData += String(magneto.magnetic.y,2);
   outputData += ",\"mz\":"; outputData += String(magneto.magnetic.z,2);
+  */
   outputData += ",\"gx\":"; outputData += String(gyo.gyro.x,2);
   outputData += ",\"gy\":"; outputData += String(gyo.gyro.y,2);
   outputData += ",\"gz\":"; outputData += String(gyo.gyro.z,2);
@@ -112,6 +115,8 @@ bool sendDASData(){
   if(sendPacketConfirm){ 
     packetNum++;
   }
+  delay(100);
+  digitalWrite(bluLED, LOW);
   return sendPacketConfirm;
 }
 
@@ -182,7 +187,7 @@ bool drop(uint8_t* payload){
 }
 void setup() {
   Serial.begin(9600);
-  while(!Serial){delay(1);}
+  //while(!Serial){delay(1);} //Used for debugging
   Serial.println("Initializing Data Acquisition System");
   Wire.begin();
 
@@ -291,10 +296,11 @@ void loop() {
   
   //--------Update GPS Data-------------------------------------------------------
   char GPSRaw = GPS.read(); //Read raw GPS data
+  /*
   if(GPSECHO){  //Used for debugging, comment out for running
     Serial.write(GPSRaw);
   }
-
+*/
   if(GPS.newNMEAreceived()){
     if(!GPS.parse(GPS.lastNMEA())){
     }
