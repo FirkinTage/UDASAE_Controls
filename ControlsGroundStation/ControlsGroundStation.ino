@@ -22,8 +22,8 @@ int16_t packetNum = 0;  //packet counter
 //---------Button Setup------------------------------
 #define payBtn 5
 #define cdaBtn 6
-#define payDropLED 9
-#define cdaDropLED 10
+#define payDropLED 8
+#define cdaDropLED 9
 int payDropState = 0,cdaDropState = 0;             //Current state of the drop buttons
 int payLEDState = LOW,cdaLEDState = LOW;           //Current state of the drop LEDs
 int payDropConfirmed = 0,cdaDropConfirmed = 0;     //Drops confirmed by DAS
@@ -87,19 +87,26 @@ void loop() {
           Serial.print(F("deserializeJson() failed: "));
           Serial.println(error.c_str());
         }
-        int dropStatus = inData["drp"];
-        if(dropStatus == 101){
-          payDropConfirmed = 1;
+        int dropStatus = inData["dp"];
+        if(dropStatus == 0){
+          payDropConfirmed = 0;
+          cdaDropConfirmed = 0;
         }
-        if(dropStatus == 111){
+        else if(dropStatus == 101){
+          payDropConfirmed = 1;
+          cdaDropConfirmed = 0;
+        }
+        else if(dropStatus == 10){
+          payDropConfirmed = 0;
+          cdaDropConfirmed = 1;
+        }
+        else if(dropStatus == 111){
           payDropConfirmed = 1;
           cdaDropConfirmed = 1;
         }
-        if(dropStatus == 10){
-          cdaDropConfirmed = 1;
-        }
+        
         Serial.print("{");
-        Serial.print("\"pkt\":");       serializeJson(inData["pk"], Serial);
+        Serial.print("\"pkt\":");        serializeJson(inData["pk"], Serial);
         Serial.print(",\"drp\":");       serializeJson(inData["dp"], Serial);
         Serial.print(",\"alt\":");       serializeJson(inData["al"], Serial);
         Serial.print(",\"lat\":");       serializeJson(inData["lt"], Serial);
@@ -109,9 +116,11 @@ void loop() {
         Serial.print(",\"aclx\":");      serializeJson(inData["ax"], Serial);
         Serial.print(",\"acly\":");      serializeJson(inData["ay"], Serial);
         Serial.print(",\"aclz\":");      serializeJson(inData["az"], Serial);
+        /*
         Serial.print(",\"magx\":");      serializeJson(inData["mx"], Serial);
         Serial.print(",\"magy\":");      serializeJson(inData["my"], Serial);
         Serial.print(",\"magz\":");      serializeJson(inData["mz"], Serial);
+        */
         Serial.print(",\"gyrox\":");     serializeJson(inData["gx"], Serial);
         Serial.print(",\"gyroy\":");     serializeJson(inData["gy"], Serial);
         Serial.print(",\"gyroz\":");     serializeJson(inData["gz"], Serial);
