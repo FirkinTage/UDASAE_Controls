@@ -106,27 +106,27 @@ void loop() {
         }
         
         Serial.print("{");
-        Serial.print("\"pkt\":");        serializeJson(inData["pk"], Serial);
-        Serial.print(",\"drp\":");       serializeJson(inData["dp"], Serial);
-        Serial.print(",\"alt\":");       serializeJson(inData["al"], Serial);
-        Serial.print(",\"lat\":");       serializeJson(inData["lt"], Serial);
-        Serial.print(",\"lon\":");       serializeJson(inData["ln"], Serial);
-        Serial.print(",\"hdng\":");      serializeJson(inData["hd"], Serial);
-        Serial.print(",\"spd\":");       serializeJson(inData["sp"], Serial);
-        Serial.print(",\"aclx\":");      serializeJson(inData["ax"], Serial);
-        Serial.print(",\"acly\":");      serializeJson(inData["ay"], Serial);
-        Serial.print(",\"aclz\":");      serializeJson(inData["az"], Serial);
+        Serial.print("\"pkt\":");        serializeJson(inData["p"], Serial);
+        Serial.print(",\"drp\":");       serializeJson(inData["d"], Serial);
+        Serial.print(",\"alt\":");       serializeJson(inData["a"], Serial);
+        Serial.print(",\"lat\":");       serializeJson(inData["t"], Serial);
+        Serial.print(",\"lon\":");       serializeJson(inData["n"], Serial);
+        Serial.print(",\"hdng\":");      serializeJson(inData["h"], Serial);
+        Serial.print(",\"spd\":");       serializeJson(inData["s"], Serial);
+        Serial.print(",\"aclx\":");      serializeJson(inData["x"], Serial);
+        Serial.print(",\"acly\":");      serializeJson(inData["y"], Serial);
+        Serial.print(",\"aclz\":");      serializeJson(inData["z"], Serial);
         /*
         Serial.print(",\"magx\":");      serializeJson(inData["mx"], Serial);
         Serial.print(",\"magy\":");      serializeJson(inData["my"], Serial);
         Serial.print(",\"magz\":");      serializeJson(inData["mz"], Serial);
         */
-        Serial.print(",\"gyrox\":");     serializeJson(inData["gx"], Serial);
-        Serial.print(",\"gyroy\":");     serializeJson(inData["gy"], Serial);
-        Serial.print(",\"gyroz\":");     serializeJson(inData["gz"], Serial);
-        Serial.print(",\"habHeight\":"); serializeJson(inData["hH"], Serial);
-        Serial.print(",\"cdaHeight\":"); serializeJson(inData["cH"], Serial);
-        Serial.print(",\"watHeight\":"); serializeJson(inData["wH"], Serial);
+        Serial.print(",\"gyrox\":");     serializeJson(inData["i"], Serial);
+        Serial.print(",\"gyroy\":");     serializeJson(inData["j"], Serial);
+        Serial.print(",\"gyroz\":");     serializeJson(inData["k"], Serial);
+        Serial.print(",\"habHeight\":"); serializeJson(inData["b"], Serial);
+        Serial.print(",\"cdaHeight\":"); serializeJson(inData["c"], Serial);
+        Serial.print(",\"watHeight\":"); serializeJson(inData["w"], Serial);
         Serial.print(",\"rssi\":");      Serial.print(rf95.lastRssi());
         Serial.println("}");
       }
