@@ -28,7 +28,7 @@ RH_RF95 rf95(RFM95_CS, RFM95_INT);
 int16_t packetNum = 0;  //packet counter
 uint8_t recvDataPacket[RH_RF95_MAX_MESSAGE_LEN];  //packet that will be received from ground station
 uint8_t recvLen = sizeof(recvDataPacket);
-  String outputData;
+String outputData;
 
 //--------Altimeter Setup---------------------------
 Adafruit_BMP3XX bmp; // I2C
@@ -43,18 +43,18 @@ sensors_event_t accl, magneto, gyo, lsmTemp;
 //--------GPS Setup---------------------------------
 //GPS TX pin to feather pin RX
 //GPS RX pin to feather pin TX
-Adafruit_GPS GPS(&Serial1);
+#define GPSSerial Serial1
+Adafruit_GPS GPS(&GPSSerial);
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
 #define GPSECHO  false
 
-uint8_t GPShour, GPSmin, GPSsec;
 float GPSlat,GPSlong, GPSangle, GPSspeed;
 char latDir, longDir;
 //--------Servos Setup------------------------------
-#define servo1Pin 10
+#define servo1Pin 12
 #define servo2Pin 11
-#define servoGPin 12
+#define servoGPin 10
 Servo servo1, servo2, servoG;
 uint8_t habDropped = 0, watDropped = 0, cdaDropped = 0;
 //--------LEDs Setup--------------------------------
@@ -82,6 +82,19 @@ uint8_t habDropped = 0, watDropped = 0, cdaDropped = 0;
  */
 bool sendDASData(){
   digitalWrite(bluLED, HIGH);
+  
+  //-------------Update Altitude-----------------------------------------------------
+  if(bmp.performReading()){
+    BMPtemp = bmp.temperature; //temp in C
+    pressure = bmp.pressure / 100.0; //pressure in hPa
+    height = (bmp.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084) - initHeight; 
+  }
+
+  //--------Update LSM Data---------------------------------------------------------
+  lsm.read(); //read new data
+  lsm.getEvent(&accl, &magneto, &gyo, &lsmTemp);
+
+  //--------Update Packet with all new data----------------------------------------------
   outputData = "{\"p\":";  outputData += String(packetNum);
   outputData += ",\"d\":"; outputData += String(habDropped); outputData += String(cdaDropped); outputData += String(watDropped);
   outputData += ",\"a\":"; outputData += String(height,2);
@@ -186,7 +199,7 @@ bool drop(uint8_t* payload){
   }
 }
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   //while(!Serial){delay(1);} //Used for debugging
   Serial.println("Initializing Data Acquisition System");
   Wire.begin();
@@ -259,6 +272,7 @@ void setup() {
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
   GPS.sendCommand(PGCMD_ANTENNA); // Request updates on antenna status, comment out to keep quiet
+  delay(1000);
   Serial.println("GPS Initialized OK");
 
   //--------Altimeter Init-------------------------------------------------
@@ -303,16 +317,14 @@ void loop() {
 */
   if(GPS.newNMEAreceived()){
     if(!GPS.parse(GPS.lastNMEA())){
+      return;
     }
   }
   if(millis() - GPStimer > 1000){  //Update GPS data every second    
     GPStimer = millis(); //reset timer
-    GPShour = GPS.hour;
-    GPSmin = GPS.minute;
-    GPSsec = GPS.seconds;
     if(GPS.fix){
-      GPSlat = GPS.latitude_fixed/10000000.0;
-      GPSlong = GPS.longitude_fixed/10000000.0;
+      GPSlat = GPS.latitudeDegrees;
+      GPSlong = GPS.longitudeDegrees;
       latDir = GPS.lat;
       longDir = GPS.lon;
       GPSspeed = GPS.speed * 1.15078; //To convert knots to mph
@@ -320,12 +332,9 @@ void loop() {
     }
   }
 
-  //--------Update Altimeter Data---------------------------------------------------
-  if(!bmp.performReading()){
-    Serial.println("BMP Failed to Read Data");
-  }
-  else{
-    if(startUp){ //First measurement, set initial height
+  //--------Update Initial Altimeter Data------------------------------------------
+  if(startUp){
+    if(bmp.performReading()){
       delay(500);
       BMPtemp = bmp.temperature; //temp in C
       pressure = bmp.pressure / 100.0; //pressure in hPa
@@ -333,14 +342,7 @@ void loop() {
       startUp = false;
       delay(500);
     }
-    BMPtemp = bmp.temperature; //temp in C
-    pressure = bmp.pressure / 100.0; //pressure in hPa
-    height = (bmp.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084) - initHeight; 
   }
-
-  //--------Update LSM Data---------------------------------------------------------
-  lsm.read(); //read new data
-  lsm.getEvent(&accl, &magneto, &gyo, &lsmTemp);
 
   //--------Send Data---------------------------------------------------------------
   if(millis() - sendDataTimer > 500){ //Send data every 100ms (0.1s)
