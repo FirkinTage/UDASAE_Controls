@@ -105,11 +105,9 @@ bool sendDASData(){
   outputData += ",\"x\":"; outputData += String(accl.acceleration.x,2);
   outputData += ",\"y\":"; outputData += String(accl.acceleration.y,2);
   outputData += ",\"z\":"; outputData += String(accl.acceleration.z,2);
-  /*
-  outputData += ",\"mx\":"; outputData += String(magneto.magnetic.x,2);
-  outputData += ",\"my\":"; outputData += String(magneto.magnetic.y,2);
-  outputData += ",\"mz\":"; outputData += String(magneto.magnetic.z,2);
-  */
+  outputData += ",\"l\":"; outputData += String(magneto.magnetic.x,2);
+  outputData += ",\"m\":"; outputData += String(magneto.magnetic.y,2);
+  outputData += ",\"o\":"; outputData += String(magneto.magnetic.z,2);
   outputData += ",\"i\":"; outputData += String(gyo.gyro.x,2);
   outputData += ",\"j\":"; outputData += String(gyo.gyro.y,2);
   outputData += ",\"k\":"; outputData += String(gyo.gyro.z,2);
