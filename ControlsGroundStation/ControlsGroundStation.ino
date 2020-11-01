@@ -29,7 +29,7 @@ int payLEDState = LOW,cdaLEDState = LOW;           //Current state of the drop L
 int payDropConfirmed = 0,cdaDropConfirmed = 0;     //Drops confirmed by DAS
 int payBtnState, cdaBtnState;
 int lastPayBtnState = LOW, lastCdaBtnState = LOW;   //Last button state for debounce
-unsigned long debounceTime = 50;                  //Decounce delay time
+unsigned long debounceTime = 100;                  //Decounce delay time
 unsigned long lastPayDebounceTime = 0, lastCdaDebounceTime = 0;
 unsigned long lastMillis = 0;
 const long blinkInterval = 500;
@@ -116,11 +116,9 @@ void loop() {
         Serial.print(",\"aclx\":");      serializeJson(inData["x"], Serial);
         Serial.print(",\"acly\":");      serializeJson(inData["y"], Serial);
         Serial.print(",\"aclz\":");      serializeJson(inData["z"], Serial);
-        /*
-        Serial.print(",\"magx\":");      serializeJson(inData["mx"], Serial);
-        Serial.print(",\"magy\":");      serializeJson(inData["my"], Serial);
-        Serial.print(",\"magz\":");      serializeJson(inData["mz"], Serial);
-        */
+        Serial.print(",\"magx\":");      serializeJson(inData["l"], Serial);
+        Serial.print(",\"magy\":");      serializeJson(inData["m"], Serial);
+        Serial.print(",\"magz\":");      serializeJson(inData["o"], Serial);
         Serial.print(",\"gyrox\":");     serializeJson(inData["i"], Serial);
         Serial.print(",\"gyroy\":");     serializeJson(inData["j"], Serial);
         Serial.print(",\"gyroz\":");     serializeJson(inData["k"], Serial);
