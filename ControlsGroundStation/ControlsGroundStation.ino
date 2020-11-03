@@ -66,6 +66,8 @@ void setup() {
   pinMode(cdaBtn, INPUT);
   pinMode(payDropLED, OUTPUT);
   pinMode(cdaDropLED, OUTPUT);
+  digitalWrite(payDropLED, LOW);
+  digitalWrite(cdaDropLED, LOW);
   Serial.println("Groundstation Initialized OK");
   
 
@@ -87,7 +89,7 @@ void loop() {
           Serial.print(F("deserializeJson() failed: "));
           Serial.println(error.c_str());
         }
-        int dropStatus = inData["dp"];
+        int dropStatus = inData["p"];
         if(dropStatus == 0){
           payDropConfirmed = 0;
           cdaDropConfirmed = 0;
@@ -192,6 +194,8 @@ void loop() {
     }
     else{cdaLEDState = LOW;
     }
+    Serial.println(cdaDropConfirmed);
+    Serial.println(payDropConfirmed);
     digitalWrite(payDropLED, payLEDState);
     digitalWrite(cdaDropLED, cdaLEDState);
   }
