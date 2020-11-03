@@ -354,7 +354,7 @@ void loop() {
     servoG.write(0);
   }
   //--------Send Data---------------------------------------------------------------
-  if(millis() - sendDataTimer > 500){ //Send data every 500ms (0.5s)
+  if(millis() - sendDataTimer > 100){ //Send data every 100ms (0.1s)
     sendDataTimer = millis();
     sendDASData();
   }
