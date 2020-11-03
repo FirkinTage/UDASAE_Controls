@@ -5,8 +5,6 @@
  * September 12, 2020
  * 
  * TODO:
- * Include servos for payload
- * Incluide LEDs for statuses
  * Test
  */
 //--------LIBRARIES--------------------------
