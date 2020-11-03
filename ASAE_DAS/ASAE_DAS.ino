@@ -5,6 +5,8 @@
  * September 12, 2020
  * 
  * TODO:
+ * Include servos for payload
+ * Incluide LEDs for statuses
  * Test
  */
 //--------LIBRARIES--------------------------
@@ -145,6 +147,7 @@ bool drop(uint8_t* payload){
     servo1Drop = 1;
     servo1.write(180);  //Turn servo to 180 degrees
     servo2.write(180);  //Turn servo to 180 degrees
+    digitalWrite(greLED, HIGH);
     BMPtemp = bmp.temperature; //temp in C
     pressure = bmp.pressure / 100.0; //pressure in hPa
     habHeight = (bmp.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084) - initHeight; 
@@ -177,6 +180,7 @@ bool drop(uint8_t* payload){
     cdaDropped = 1;
     servoGDrop = 1;
     servoG.write(180);  //Turn servo to 180 degrees
+    digitalWrite(redLED, HIGH);
     BMPtemp = bmp.temperature; //temp in C
     pressure = bmp.pressure / 100.0; //pressure in hPa
     cdaHeight = (bmp.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084) - initHeight; 
@@ -276,7 +280,7 @@ void setup() {
 
   //--------Altimeter Init-------------------------------------------------
   Serial.println("Altimeter Initializing");
-  if(!bmp.begin()){
+  if(!bmp.begin_I2C()){
   digitalWrite(redLED, HIGH);
   digitalWrite(greLED, HIGH);
   digitalWrite(bluLED, LOW);
@@ -348,8 +352,15 @@ void loop() {
     servo1.write(0);
     servo2.write(0);
   }
+  else{
+    servo1.write(180);
+    servo2.write(180);
+  }
   if(servoGDrop == 0){
     servoG.write(0);
+  }
+  else{
+    servoG.write(180);
   }
   //--------Send Data---------------------------------------------------------------
   if(millis() - sendDataTimer > 100){ //Send data every 100ms (0.1s)
