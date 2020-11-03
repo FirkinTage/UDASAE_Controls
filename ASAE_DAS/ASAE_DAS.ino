@@ -57,6 +57,7 @@ char latDir, longDir;
 #define servoGPin 10
 Servo servo1, servo2, servoG;
 uint8_t habDropped = 0, watDropped = 0, cdaDropped = 0;
+int servo1Drop = 0, servoGDrop = 0;
 //--------LEDs Setup--------------------------------
 #define redLED A1
 #define greLED A2
@@ -143,6 +144,7 @@ bool drop(uint8_t* payload){
     Serial.println("Drop Habitats/Water Bottles");
     habDropped = 1;
     watDropped = 1;
+    servo1Drop = 1;
     servo1.write(180);  //Turn servo to 180 degrees
     servo2.write(180);  //Turn servo to 180 degrees
     BMPtemp = bmp.temperature; //temp in C
@@ -175,6 +177,7 @@ bool drop(uint8_t* payload){
   else if((strncmp((char*)payload,"CDA",3) == 0)){ //Drop the cda
     Serial.println("Drop CDA");
     cdaDropped = 1;
+    servoGDrop = 1;
     servoG.write(180);  //Turn servo to 180 degrees
     BMPtemp = bmp.temperature; //temp in C
     pressure = bmp.pressure / 100.0; //pressure in hPa
@@ -342,8 +345,16 @@ void loop() {
     }
   }
 
+  //-------Make sure servos don't twitch-------------------------------------------
+  if(servo1Drop == 0){
+    servo1.write(0);
+    servo2.write(0);
+  }
+  if(servoGDrop == 0){
+    servoG.write(0);
+  }
   //--------Send Data---------------------------------------------------------------
-  if(millis() - sendDataTimer > 500){ //Send data every 100ms (0.1s)
+  if(millis() - sendDataTimer > 500){ //Send data every 500ms (0.5s)
     sendDataTimer = millis();
     sendDASData();
   }
