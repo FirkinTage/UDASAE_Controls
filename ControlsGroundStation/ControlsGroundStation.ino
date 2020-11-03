@@ -194,8 +194,6 @@ void loop() {
     }
     else{cdaLEDState = LOW;
     }
-    Serial.println(cdaDropConfirmed);
-    Serial.println(payDropConfirmed);
     digitalWrite(payDropLED, payLEDState);
     digitalWrite(cdaDropLED, cdaLEDState);
   }
