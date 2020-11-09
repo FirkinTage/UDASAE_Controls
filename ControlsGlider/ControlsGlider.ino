@@ -3,24 +3,22 @@
 #include <Wire.h>     //I2C library
 #include <Servo.h> //Servo Library
 #include <Adafruit_GPS.h> //GPS Library
-#include "Adafruit_BMP3XX.h" //Altimeter library
-#include <Adafruit_Sensor.h>  
+#include <Adafruit_MPL3115A2.h> //Altimeter library
 
 //--------GPS Setup---------------------------------
-//GPS TX pin to micro pin RX
-//GPS RX pin to micro pin TX
-#define GPSSerial Serial1
+//GPS TX pin to micro pin 5
+//GPS RX pin to micro pin 6
+SoftwareSerial GPSSerial(5,6); //RX TX
 Adafruit_GPS GPS(&GPSSerial);
 float GPSlat,GPSlong, GPSangle, GPSspeed;
 
 //--------Altimeter Setup---------------------------
-Adafruit_BMP3XX bmp; // I2C
+Adafruit_MPL3115A2 alt = Adafruit_MPL3115A2();
 bool startUp = true;
-#define SEALEVELPRESSURE_HPA (1013.25)
-float height = 0.0, initHeight = 0.0, pressure, BMPtemp;
+float height = 0.0, initHeight = 0.0;
 
 //--------Servos Setup------------------------------
-#define servoLPin 12
+#define servoLPin 10
 #define servoRPin 11
 Servo servoL, servoR;
 
@@ -35,18 +33,6 @@ void setup() {
   servoR.attach(servoRPin);
   servoL.write(0);        //Set to 0 degrees
   servoR.write(0);        //Set to 0 degrees
-
-  //--------Altimeter Init-------------------------------------------------
-  Serial.println("Altimeter Initializing");
-  if(!bmp.begin_I2C()){
-    Serial.println("Altimeter init failed, check wiring and restart system");
-  }
-  // Set up oversampling and filter initialization
-  bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
-  bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
-  bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
-  //bmp.setOutputDataRate(BMP3_ODR_50_HZ);
-  Serial.println("Altimeter Initialized OK");
 
   //--------GPS Init------------------------------------------------------
   Serial.println("GPS Initializing");
@@ -82,21 +68,24 @@ void loop() {
   
   //--------Update Altimeter Data-------------------------------------------------
   if(startUp){
-    if(bmp.performReading()){
+    if (!alt.begin()) {
+      Serial.println("Couldnt find sensor");
+      return;
+    }
+    else{
       delay(500);
-      BMPtemp = bmp.temperature; //temp in C
-      pressure = bmp.pressure / 100.0; //pressure in hPa
-      initHeight = bmp.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084; //convert meters to feet
-      startUp = false;
+      initHeight = alt.getAltitude();
       delay(500);
     }
   }
   else if(millis() - Alttimer > 100){ //Update every 100ms
     Alttimer = millis();
-    if(bmp.performReading()){
-      BMPtemp = bmp.temperature; //temp in C
-      pressure = bmp.pressure / 100.0; //pressure in hPa
-      height = (bmp.readAltitude(SEALEVELPRESSURE_HPA) * 3.28084) - initHeight; 
+    if (!alt.begin()) {
+      Serial.println("Couldnt find sensor");
+      return;
+    }
+    else{
+      height = alt.getAltitude() - initHeight;
     }
   }
 }
