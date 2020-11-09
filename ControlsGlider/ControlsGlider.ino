@@ -17,7 +17,7 @@ float GPSlat,GPSlong, GPSangle, GPSspeed;
 Adafruit_BMP3XX bmp; // I2C
 bool startUp = true;
 #define SEALEVELPRESSURE_HPA (1013.25)
-float height = 0.0, initHeight = 0.0, habHeight = 0.0, cdaHeight = 0.0, watHeight = 0.0, pressure, BMPtemp;
+float height = 0.0, initHeight = 0.0, pressure, BMPtemp;
 
 //--------Servos Setup------------------------------
 #define servoLPin 12
