@@ -179,7 +179,7 @@ bool drop(uint8_t* payload){
     Serial.println("Drop CDA");
     cdaDropped = 1;
     servoGDrop = 1;
-    servoG.write(180);  //Turn servo to 180 degrees
+    servoG.write(120);  //Turn servo to 180 degrees
     digitalWrite(redLED, HIGH);
     BMPtemp = bmp.temperature; //temp in C
     pressure = bmp.pressure / 100.0; //pressure in hPa
@@ -360,7 +360,7 @@ void loop() {
     servoG.write(0);
   }
   else{
-    servoG.write(180);
+    servoG.write(120);
   }
   //--------Send Data---------------------------------------------------------------
   if(millis() - sendDataTimer > 100){ //Send data every 100ms (0.1s)
